@@ -1,4 +1,8 @@
 package progsyn
+
+import traversal._
+import graph._
+
 /**
 trait Grammars {
   type Input = String
@@ -48,140 +52,8 @@ abstract class Grammar[+T] extends (() => Stream[T]) { self =>
 
 }
 */
-import scala.collection.immutable.Queue
 
-object ProgSyn {
-
-  abstract class Direction
-  case object Left extends Direction
-  case object Right extends Direction
-  case object Down extends Direction
-
-  abstract class Node[T] {
-    var parent: Option[Node[T]]
-    /** Indicates if this is the left, right or down child of the parent */
-    val dir: Direction
-  }
-
-  object Node {
-    def copy[T](n: Node[T], p: Option[Node[T]], d: Direction) = n match {
-      case a @ AndNode(_, _, _, _, _) => a.copy(parent = p, dir = d)
-      case o @ OrNode(_, _, _, _)     => o.copy(parent = p, dir = d)
-      case t @ Terminal(_, _, _)      => t.copy(parent = p, dir = d)
-    }
-  }
-
-  case class AndNode[T](
-      var parent: Option[Node[T]],
-      dir: Direction,
-      leftChild: Node[T],
-      rightChild: Node[T],
-      builder: (T, T) => T) extends Node[T] {
-
-    import scala.collection.mutable.ListBuffer
-
-    val leftSolutions: ListBuffer[T] = ListBuffer.empty[T]
-    val rightSolutions: ListBuffer[T] = ListBuffer.empty[T]
-  }
-
-  case class OrNode[T](
-    var parent: Option[Node[T]],
-    dir: Direction,
-    var leftChild: Node[T],
-    rightChild: Node[T]) extends Node[T]
-
-  case class Terminal[T](
-    value: T,
-    var parent: Option[Node[T]],
-    dir: Direction) extends Node[T]
-
-  def bfTraverse[T](rootNode: Node[T]): Stream[T] = {
-    import Node._
-
-    /**
-     * The inner loop doing a breadth-first traversal over a node
-     * structure
-     * Since we are generating a grammar, we will always add new children
-     * for every node we see, setting their parent the node we just have observed
-     * This will ensure that the right parent is preserved at all stages
-     */
-    def loop(ls: Queue[Node[T]]): Stream[T] = {
-      if (ls.isEmpty) Stream.empty
-      else {
-        val (hd, tl) = ls.dequeue
-        hd match {
-          case AndNode(p, d, l, r, _) =>
-            val newL = copy(l, p = Some(hd), d = Left)
-            val newR = copy(r, p = Some(hd), d = Right)
-            loop(tl :+ newL :+ newR)
-
-          case OrNode(p, d, l, r)  =>
-            val newL = copy(l, p = Some(hd), d = Left)
-            val newR = copy(r, p = Some(hd), d = Right)
-            loop(tl :+ newL :+ newR)
-
-          case Terminal(v, p, d)  => p match {
-            case Some(parent) => backPropagate(parent, v #:: Stream.empty, tl, d)
-            case None         => v #:: loop(tl)
-          }
-        }
-      }
-    }
-
-    def backPropagate(
-        node: Node[T],
-        ts: Stream[T],
-        queue: Queue[Node[T]],
-        dir: Direction): Stream[T] = node match {
-      
-      case andNode @ AndNode(parent, d, _, _, f) => {
-        /**
-         * based on where the notification came from
-         * compute possible resulting nodes
-         * Also, as a side effect, left or right solutions is updated
-         */
-        val newSolutions = (dir match {
-          case Left => 
-            andNode.leftSolutions ++= ts
-            for (l <- ts; r <- andNode.rightSolutions) yield f(l, r)
-          
-          case Right => 
-            andNode.rightSolutions ++= ts
-            for (l <- andNode.leftSolutions; r <- ts) yield f(l, r)
-          
-          case _ => sys.error("AndNode can't have a Down Child")
-        }).toStream
-
-        parent match {
-          /**
-           * Since no parent node, all I need to do is to cross product
-           * these solutions with those on the other side, and ship
-           * the results out
-           * ATTENTION! cannot use `++` because it is inherited from eager collections
-           * use `#:::` for preserving the laziness aspect
-           */
-          case None => newSolutions #::: loop(queue)
-          case Some(p) => backPropagate(p, newSolutions, queue, d)
-        }
-      }
-        
-      /**
-       * if I have no parent, I can output the nodes forwarded to me
-       * ATTENTION! cannot use `++` because it is inherited from eager collections
-       * use `#:::` for preserving the laziness aspect
-       */
-      case OrNode(parent, d, _, _) => parent match {
-        case None => ts #::: loop(queue)
-        case Some(p) => backPropagate(p, ts, queue, d)
-      }
-      
-      case Terminal(v, p, d) => 
-        sys.error("can't back propagate to a Terminal")
-    }
-
-    loop(Queue(rootNode))
-  }
-
+object ProgSyn extends Traversal {
   def main(args: Array[String]): Unit = {
     println("Hi!")
 
