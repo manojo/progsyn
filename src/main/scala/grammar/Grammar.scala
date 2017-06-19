@@ -2,8 +2,7 @@ package grammar
 
 trait Grammars {
 
-abstract class Grammar[+T] extends (() => Stream[T]) { self =>
-
+  abstract class Grammar[+T] extends (() => Stream[T]) { self =>
     def ~[U](that: => Grammar[U]): Grammar[(T, U)] =
       And(this, mkGrammar{() => that()})
 
@@ -35,4 +34,12 @@ abstract class Grammar[+T] extends (() => Stream[T]) { self =>
   }
 
   def unit[T](t: T): Grammar[T] = Just(t)
+
+  /**
+   * Some base generators
+   */
+  def natGen: Grammar[Int] = new Grammar[Int] {
+    def from(i: Int): Stream[Int] = i #:: from(i + 1)
+    def apply() = from(0)
+  }
 }

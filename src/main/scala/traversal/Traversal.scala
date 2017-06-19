@@ -23,7 +23,7 @@ trait Traversal {
             val newL = copy(l, p = Some(hd), d = Left)
             val newR = copy(r, p = Some(hd), d = Right)
             loop(tl :+ newL :+ newR)
-          
+
           case OrNode(p, d, l, r)  =>
             val newL = copy(l, p = Some(hd), d = Left)
             val newR = copy(r, p = Some(hd), d = Right)
@@ -42,7 +42,7 @@ trait Traversal {
         ts: Stream[T],
         queue: Queue[Node[T]],
         dir: Direction): Stream[T] = node match {
-      
+
       case andNode @ AndNode(parent, d, _, _, f) => {
         /**
          * based on where the notification came from
@@ -50,14 +50,14 @@ trait Traversal {
          * Also, as a side effect, left or right solutions is updated
          */
         val newSolutions = (dir match {
-          case Left => 
+          case Left =>
             andNode.leftSolutions ++= ts
             for (l <- ts; r <- andNode.rightSolutions) yield f(l, r)
-          
-          case Right => 
+
+          case Right =>
             andNode.rightSolutions ++= ts
             for (l <- andNode.leftSolutions; r <- ts) yield f(l, r)
-          
+
           case _ => sys.error("AndNode can't have a Down Child")
         }).toStream
 
@@ -73,7 +73,7 @@ trait Traversal {
           case Some(p) => backPropagate(p, newSolutions, queue, d)
         }
       }
-        
+
       /**
        * if I have no parent, I can output the nodes forwarded to me
        * ATTENTION! cannot use `++` because it is inherited from eager collections
@@ -83,11 +83,11 @@ trait Traversal {
         case None => ts #::: loop(queue)
         case Some(p) => backPropagate(p, ts, queue, d)
       }
-      
-      case Terminal(v, p, d) => 
+
+      case Terminal(v, p, d) =>
         sys.error("can't back propagate to a Terminal")
     }
-    
+
     loop(Queue(rootNode))
   }
 }

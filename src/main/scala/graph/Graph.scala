@@ -2,7 +2,7 @@ package graph
 
 /**
  * A datatype that specifies which
- * direction a given node has come from 
+ * direction a given node has come from
  */
 abstract class Direction
 case object Left extends Direction
