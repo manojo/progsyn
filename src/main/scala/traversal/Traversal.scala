@@ -18,18 +18,20 @@ trait Traversal {
     else {
       val (hd, tl) = ls.dequeue
       hd match {
-        case AndNode(p, d, l, r, _) =>
-          val newL = copy(l, p = Some(hd), d = Left)
-          val newR = copy(r, p = Some(hd), d = Right)
-          loop(tl :+ newL :+ newR)
+        case AndNode(p, _, children, _) =>
+          val newChildren = children.zipWithIndex map { case (child, idx) =>
+            copy(child, p = Some(hd), pos = idx)
+          }
+          loop(tl ++ newChildren)
 
-        case OrNode(p, d, l, r)  =>
-          val newL = copy(l, p = Some(hd), d = Left)
-          val newR = copy(r, p = Some(hd), d = Right)
-          loop(tl :+ newL :+ newR)
+        case OrNode(p, _, children)  =>
+          val newChildren = children.zipWithIndex map { case (child, idx) =>
+            copy(child, p = Some(hd), pos = idx)
+          }
+          loop(tl ++ newChildren)
 
-        case Terminal(v, p, d)  =>
-          backPropagate(p, v #:: Stream.empty, tl, d)
+        case Terminal(v, p, pos)  =>
+          backPropagate(p, v #:: Stream.empty, tl, pos)
       }
     }
   }
@@ -44,10 +46,10 @@ trait Traversal {
       receiver: Option[Node[T]],
       ts: Stream[T],
       queue: Queue[Node[T]],
-      dir: Direction): Stream[T] = receiver match {
+      pos: Int): Stream[T] = receiver match {
 
     case Some(node) => node match {
-      case andNode @ AndNode(parent, d, _, _, f) => {
+      case andNode @ AndNode(parent, pos, cs, f) => {
         /**
          * based on where the notification came from
          * compute possible resulting nodes
@@ -82,6 +84,11 @@ trait Traversal {
   }
 
   def bfTraverse[T](rootNode: Node[T]): Stream[T] = loop(Queue(rootNode))
+
+  private def cartesianProduct[T](ls: List[List[T]]): List[List[T]] = ls match {
+    case Nil => Nil
+    case x :: xs =>
+  }
 }
 
 /**
