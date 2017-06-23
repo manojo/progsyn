@@ -75,7 +75,7 @@ trait Traversal {
        * ATTENTION! cannot use `++` because it is inherited from eager collections
        * use `#:::` for preserving the laziness aspect
        */
-      case OrNode(parent, d, _, _) => backPropagate(parent, ts, queue, d)
+      case OrNode(parent, pos, _, _) => backPropagate(parent, ts, queue, pos)
       case t: Terminal[_] =>
         sys.error("a terminal cannot be a receiver in backprop")
     }
@@ -85,9 +85,10 @@ trait Traversal {
 
   def bfTraverse[T](rootNode: Node[T]): Stream[T] = loop(Queue(rootNode))
 
-  private def cartesianProduct[T](ls: List[List[T]]): List[List[T]] = ls match {
+  def cartesianProduct[T](ls: List[List[T]]): List[List[T]] = ls match {
     case Nil => Nil
-    case x :: xs =>
+    case xs :: Nil => for (x <- xs) yield List(x)
+    case xs :: xss => for (lst <- cartesianProduct(xss); x <- xs) yield (x :: lst)
   }
 }
 
