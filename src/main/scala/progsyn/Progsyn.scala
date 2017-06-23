@@ -44,13 +44,14 @@ object ProgSyn extends Traversal with AddLanguage {
      * s := (t ~ s) map f | t
      * t := Lookup
      */
-//    val t: Node[Exp] = Terminal(Lookup(1), None, Right)
-//    val rootNode: Node[Exp] = OrNode(None, Down, null, t)
-//    val andNode: Node[Exp] = AndNode(None, Left, t, rootNode, (l, r) => Add(l, r))
-//    rootNode match { case o: OrNode[_] => o.leftChild = andNode }
-//
-//    println(bfTraverse(rootNode).take(4).toList)
+    val t: Node[Exp] = Terminal(Lookup(1) #:: Stream.empty, None, 1)
+    val rootNode: Node[Exp] = OrNode(None, -1, Array(null, t))
+    val andNode: Node[Exp] = AndNode(
+      None, 1, Array(t, rootNode),
+      { case l :: r :: _ => Add(l, r) })
+    rootNode match { case o: OrNode[_] => o.children(0) = andNode }
+
+    println(bfTraverse(rootNode).take(4).toList)
     val lst = List(List(1, 2), List(3, 4), List(5, 6))
-    println(cartesianProduct(lst))
   }
 }
