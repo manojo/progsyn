@@ -90,7 +90,7 @@ trait Solution1 extends StringLanguage {
     from(1) flatMap pairsWith
   }
 
-  // genSubstring(List(("hehe", "he"))) will yield only two solutions, (0, 2), (2, 4)
+  // genSubstring(List(("hehe", "he"))) will yield both solutions, (0, 2), (2, 4)
 }
 
 
