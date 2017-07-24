@@ -141,10 +141,28 @@ trait Solution3 extends StringLanguage {
   // genSubstring(List(("hehe", "he"))) will yield 4 solutions, (-3, -1), (0, 2), (-5, -3), (2, 4)
 }
 
+/**
+ * Introducing a new way to get positions, using regex positions, to match
+ * beginning and end positions
+ */
+trait Solution4 extends StringLanguage {
+  case class RegexPos(v: String, r: Regex, num: Int) extends Pos
+
+  override def eval(p: Pos): Int = p match {
+    case RegexPos(v, r, num) =>
+    case _ => super.eval(p)
+  }
+}
+
 object StringExtract extends Solution3 {
 
   def main(args: Array[String]): Unit = {
     println("Hi!")
-    println(genSubstring(List(("hehe", "he"))).take(10).toList)
+
+    val examples = List(
+      ("hehe", "he"),
+      ("hello", "he")
+    )
+    println(genSubstring(examples).take(10).toList)
   }
 }
