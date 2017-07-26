@@ -144,15 +144,62 @@ trait Solution3 extends StringLanguage {
  * beginning and end positions
  */
 trait Solution4 extends StringLanguage {
-  case class RegexPos(v: String, r: Regex, num: Int) extends Pos
 
-  override def eval(p: Pos): Int = p match {
-    case RegexPos(v, r, num) =>
-    case _ => super.eval(p)
+  /**
+   * A position represented by the ith match
+   * of lreg and rreg. The position, in int, corresponds to the position
+   * where lreg ends and rreg starts (with nothing in the middle)
+   */
+  case class RegexPos(v: StrSym.type, lreg: Regex, rreg: Regex, num: Int) extends Pos
+
+  override def eval(p: Pos, s: String): Int = p match {
+    case RegexPos(v, lreg, rreg, num) =>
+      println("a wa do dem")
+
+      /**
+       * all matches of lreg, we assume they're in ascending order
+       */
+      val lregEndings = lreg.findAllMatchIn(s).map(_.end + 1)
+      val rregBeginnings = rreg.findAllMatchIn(s).map(_.start).toSet
+
+      println(rregBeginnings)
+
+      val relevantPoses =
+        lregEndings.filter(pos => rregBeginnings.contains(pos)).toArray
+
+      println(s"stuff: $lreg, $rreg, ${relevantPoses.toList}")
+
+      val len = relevantPoses.length
+      if (num >= 0 && num < len) relevantPoses(num)
+      else if (num < 0 && -num <= len) relevantPoses(len + num)
+      else -1
+
+    case _ => super.eval(p, s)
+  }
+
+  def genSubstring(examples: List[(String, String)]): Stream[Exp] = {
+    val smallestLen = examples.minBy(pair => pair._1.length)._1.length
+    println(smallestLen)
+
+    genPair(smallestLen)
+      .map { case (st, end) => Substring(StrSym, AbsPos(StrSym, st), AbsPos(StrSym, end)) }
+      .filter(substr => examples.forall { case (in, out) => eval(substr, in) == out })
+  }
+
+  def genPair(maxSize: Int): Stream[(Int, Int)] = {
+    def from(i: Int): Stream[Int] = {
+      if (i > maxSize) Stream.empty
+      else i #:: from(i + 1)
+    }
+
+    def pairsWith(n: Int): Stream[(Int, Int)] =
+      (for (i <- 0 to n) yield (i, n)).toStream
+
+    from(1) flatMap pairsWith
   }
 }
 
-object StringExtract extends Solution3 {
+object StringExtract extends Solution4 {
 
   def main(args: Array[String]): Unit = {
     println("Hi!")
@@ -161,6 +208,14 @@ object StringExtract extends Solution3 {
       ("hehe", "he"),
       ("hello", "he")
     )
-    println(genSubstring(examples).take(10).toList)
+
+    val progTree = Substring(
+      StrSym,
+      RegexPos(StrSym, ".".r , "\\d+".r, 0),
+      RegexPos(StrSym, ".".r , "\\d+".r , -1)
+    )
+
+    //println(genSubstring(examples).take(10).toList)
+    println(eval(progTree, "asdf123asdfad321asdfds"))
   }
 }
