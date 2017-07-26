@@ -11,15 +11,13 @@ trait StringLanguage {
 
   sealed trait Pos
   case class AbsPos(v: StrSym.type, i: Int) extends Pos
-  //case class RegexPos(v: String, r: Regex, p: Int) extends Pos
 
   def eval(e: Exp, s: String): String = e match {
-    case Substring(_, l, r) => s.substring(eval(l), eval(r))
+    case Substring(_, l, r) => s.substring(eval(l, s), eval(r, s))
   }
 
-  def eval(p: Pos): Int = p match {
+  def eval(p: Pos, s: String): Int = p match {
     case AbsPos(_, i) => i
-    //case RegexPos(v, )
   }
 
   def solve(examples: List[(String, String)]): Stream[Exp] =
@@ -102,7 +100,7 @@ trait Solution1 extends StringLanguage {
 trait Solution3 extends StringLanguage {
 
   override def eval(e: Exp, s: String): String = e match {
-    case Substring(_, l, r) => funkysub(s, eval(l), eval(r))
+    case Substring(_, l, r) => funkysub(s, eval(l, s), eval(r, s))
   }
 
   //returns the empty string if positions don't match
