@@ -12,12 +12,15 @@ trait StringLanguage {
   sealed trait Pos
   case class AbsPos(v: StrSym.type, i: Int) extends Pos
 
-  def eval(e: Exp, s: String): String = e match {
-    case Substring(_, l, r) => s.substring(eval(l, s), eval(r, s))
+  def eval(e: Exp, s: String): Option[String] = e match {
+    case Substring(_, l, r) => for {
+      i <- eval(l, s)
+      j <- eval(r, s)
+    } yield s.substring(i, j)
   }
 
-  def eval(p: Pos, s: String): Int = p match {
-    case AbsPos(_, i) => i
+  def eval(p: Pos, s: String): Option[Int] = p match {
+    case AbsPos(_, i) => if (i < 0) None else Some(i)
   }
 
   def solve(examples: List[(String, String)]): Stream[Exp] =
@@ -41,7 +44,7 @@ trait Solution0 extends StringLanguage {
     genPair
       .filter { case (l, r) => l < r }
       .map { case (st, end) => Substring(StrSym, AbsPos(StrSym, st), AbsPos(StrSym, end)) }
-      .filter(substr => examples.forall { case (in, out) => eval(substr, in) == out })
+      .filter(substr => examples.forall { case (in, out) => eval(substr, in) == Some(out) })
   }
 
   def genPair: Stream[(Int, Int)] = {
@@ -73,7 +76,7 @@ trait Solution1 extends StringLanguage {
 
     genPair(smallestLen)
       .map { case (st, end) => Substring(StrSym, AbsPos(StrSym, st), AbsPos(StrSym, end)) }
-      .filter(substr => examples.forall { case (in, out) => eval(substr, in) == out })
+      .filter(substr => examples.forall { case (in, out) => eval(substr, in) == Some(out) })
   }
 
   def genPair(maxSize: Int): Stream[(Int, Int)] = {
@@ -99,8 +102,11 @@ trait Solution1 extends StringLanguage {
  */
 trait Solution3 extends StringLanguage {
 
-  override def eval(e: Exp, s: String): String = e match {
-    case Substring(_, l, r) => funkysub(s, eval(l, s), eval(r, s))
+  override def eval(e: Exp, s: String): Option[String] = e match {
+    case Substring(_, l, r) => for {
+      i <- eval(l, s)
+      j <- eval(r, s)
+    } yield funkysub(s, i, j)
   }
 
   //returns the empty string if positions don't match
@@ -118,7 +124,7 @@ trait Solution3 extends StringLanguage {
 
     genPair(smallestLen)
       .map { case (st, end) => Substring(StrSym, AbsPos(StrSym, st), AbsPos(StrSym, end)) }
-      .filter(substr => examples.forall { case (in, out) => eval(substr, in) == out })
+      .filter(substr => examples.forall { case (in, out) => eval(substr, in) == Some(out) })
   }
 
   def genPair(maxSize: Int): Stream[(Int, Int)] = {
@@ -152,27 +158,22 @@ trait Solution4 extends StringLanguage {
    */
   case class RegexPos(v: StrSym.type, lreg: Regex, rreg: Regex, num: Int) extends Pos
 
-  override def eval(p: Pos, s: String): Int = p match {
+  override def eval(p: Pos, s: String): Option[Int] = p match {
     case RegexPos(v, lreg, rreg, num) =>
-      println("a wa do dem")
 
       /**
        * all matches of lreg, we assume they're in ascending order
        */
-      val lregEndings = lreg.findAllMatchIn(s).map(_.end + 1)
+      val lregEndings = lreg.findAllMatchIn(s).map(_.end)
       val rregBeginnings = rreg.findAllMatchIn(s).map(_.start).toSet
-
-      println(rregBeginnings)
 
       val relevantPoses =
         lregEndings.filter(pos => rregBeginnings.contains(pos)).toArray
 
-      println(s"stuff: $lreg, $rreg, ${relevantPoses.toList}")
-
       val len = relevantPoses.length
-      if (num >= 0 && num < len) relevantPoses(num)
-      else if (num < 0 && -num <= len) relevantPoses(len + num)
-      else -1
+      if (num >= 0 && num < len) Some(relevantPoses(num))
+      else if (num < 0 && -num <= len) Some(relevantPoses(len + num))
+      else None
 
     case _ => super.eval(p, s)
   }
@@ -183,7 +184,7 @@ trait Solution4 extends StringLanguage {
 
     genPair(smallestLen)
       .map { case (st, end) => Substring(StrSym, AbsPos(StrSym, st), AbsPos(StrSym, end)) }
-      .filter(substr => examples.forall { case (in, out) => eval(substr, in) == out })
+      .filter(substr => examples.forall { case (in, out) => eval(substr, in) == Some(out) })
   }
 
   def genPair(maxSize: Int): Stream[(Int, Int)] = {
@@ -211,7 +212,7 @@ object StringExtract extends Solution4 {
 
     val progTree = Substring(
       StrSym,
-      RegexPos(StrSym, ".".r , "\\d+".r, 0),
+      RegexPos(StrSym, "\\d+".r , ".".r, 0),
       RegexPos(StrSym, ".".r , "\\d+".r , -1)
     )
 
