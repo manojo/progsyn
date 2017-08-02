@@ -120,7 +120,6 @@ trait Solution3 extends StringLanguage {
 
   def genSubstring(examples: List[(String, String)]): Stream[Exp] = {
     val smallestLen = examples.minBy(pair => pair._1.length)._1.length
-    println(smallestLen)
 
     genPair(smallestLen)
       .map { case (st, end) => Substring(StrSym, AbsPos(StrSym, st), AbsPos(StrSym, end)) }
@@ -180,7 +179,6 @@ trait Solution4 extends StringLanguage {
 
   def genSubstring(examples: List[(String, String)]): Stream[Exp] = {
     val smallestLen = examples.minBy(pair => pair._1.length)._1.length
-    println(smallestLen)
 
     genPair(smallestLen)
       .map { case (st, end) => Substring(StrSym, AbsPos(StrSym, st), AbsPos(StrSym, end)) }
