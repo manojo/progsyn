@@ -20,7 +20,7 @@ trait StringLanguage {
   }
 
   def eval(p: Pos, s: String): Option[Int] = p match {
-    case AbsPos(_, i) => if (i < 0) None else Some(i)
+    case AbsPos(_, i) => Some(i)
   }
 
   def solve(examples: List[(String, String)]): Stream[Exp] =
