@@ -173,7 +173,9 @@ trait Solution4 extends StringLanguage {
         lregEndings.filter(pos => rregBeginnings.contains(pos)).toArray
 
       val len = relevantPoses.length
-      if (num >= 0 && num < len) Some(relevantPoses(num))
+
+      if (len == 0) None
+      else if (num >= 0 && num < len) Some(relevantPoses(num))
       else if (num < 0 && -num <= len) Some(relevantPoses(len + num))
       else None
 
