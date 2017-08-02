@@ -151,7 +151,7 @@ trait Solution3 extends StringLanguage {
  * Introducing a new way to get positions, using regex positions, to match
  * beginning and end positions
  */
-trait Solution4 extends StringLanguage {
+trait Solution4 extends Solution3 {
 
   /**
    * A position represented by the ith match
@@ -159,6 +159,20 @@ trait Solution4 extends StringLanguage {
    * where lreg ends and rreg starts (with nothing in the middle)
    */
   case class RegexPos(v: StrSym.type, lreg: Regex, rreg: Regex, num: Int) extends Pos
+
+  /**
+   * Store of regexes
+   */
+  val allowedRegexes: List[Regex] = List(
+    "".r, //empty
+    "\\d".r, //digits
+    "\\d+".r,
+    "[a-zA-Z]".r, //letters
+    "[a-zA-Z]+".r,
+    "\\s".r, //spaces
+    "\\s+".r
+  )
+
 
   override def eval(p: Pos, s: String): Option[Int] = p match {
     case RegexPos(v, lreg, rreg, num) =>
@@ -182,24 +196,48 @@ trait Solution4 extends StringLanguage {
     case _ => super.eval(p, s)
   }
 
-  def genSubstring(examples: List[(String, String)]): Stream[Exp] = {
+  /**
+   * generating a substring means either generating abspositions
+   * and regexpositions
+   * Generating regex positions amounts to doing a cross product on available
+   * regexes and their positions
+   */
+  override def genSubstring(examples: List[(String, String)]): Stream[Exp] = {
+
     val smallestLen = examples.minBy(pair => pair._1.length)._1.length
 
-    genPair(smallestLen)
-      .map { case (st, end) => Substring(StrSym, AbsPos(StrSym, st), AbsPos(StrSym, end)) }
-      .filter(substr => examples.forall { case (in, out) => eval(substr, in) == Some(out) })
-  }
+    val regPoses = genRegexPos(examples)
 
-  def genPair(maxSize: Int): Stream[(Int, Int)] = {
-    def from(i: Int): Stream[Int] = {
-      if (i > maxSize) Stream.empty
-      else i #:: from(i + 1)
+    val possibleSubstrs: Stream[Exp] = {
+      (for (r1 <- regPoses; r2 <- regPoses) yield Substring(StrSym, r1, r2))
+      .filter(substr => examples.forall { case (in, out) => eval(substr, in) == Some(out) })
     }
 
-    def pairsWith(n: Int): Stream[(Int, Int)] =
-      (for (i <- 0 to n) yield (i, n)).toStream
+    super.genSubstring(examples) #::: possibleSubstrs
+  }
 
-    from(1) flatMap pairsWith
+  def genRegexPos(examples: List[(String, String)]): Stream[RegexPos] = {
+
+    // filter all regexes from the list which match at least once
+    // in all examples
+    val relevantRegexes = allowedRegexes.filter { regex =>
+      examples.map(_._1).forall { in =>
+        !regex.findFirstIn(in).isEmpty
+      }
+    }.toSet
+
+    // find the max possible number of regex matches
+    // since the empty string (epsilon) will always be matched
+    // this is the same as finding the shortest example input string
+    val smallestLen = examples.minBy(pair => pair._1.length)._1.length
+
+    val regexPoses = (for {
+      r <- relevantRegexes
+      r2 <- relevantRegexes - r
+      idx <- (0 until smallestLen) ++ (1 to smallestLen).map(x => -x)
+    } yield RegexPos(StrSym, r, r2, idx)).toStream
+
+    regexPoses
   }
 }
 
@@ -213,13 +251,13 @@ object StringExtract extends Solution4 {
       ("hello", "he")
     )
 
-    val progTree = Substring(
-      StrSym,
-      RegexPos(StrSym, "\\d+".r , ".".r, 0),
-      RegexPos(StrSym, ".".r , "\\d+".r , -1)
-    )
+    //val progTree = Substring(
+    //  StrSym,
+    //  RegexPos(StrSym, "\\d+".r , "".r, 0),
+    //  RegexPos(StrSym, "".r , "\\d+".r , -1)
+    //)
 
-    //println(genSubstring(examples).take(10).toList)
-    println(eval(progTree, "asdf123asdfad321asdfds"))
+    println(genSubstring(examples).take(10).toList)
+    //println(eval(progTree, "asdf123asdfad321asdfds"))
   }
 }
