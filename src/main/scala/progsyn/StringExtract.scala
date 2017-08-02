@@ -138,10 +138,13 @@ trait Solution3 extends StringLanguage {
     def pairsWithNeg(n: Int): Stream[(Int, Int)] =
       (for (i <- (n + 1) to (maxSize + 1)) yield (-i, -n)).toStream
 
-    from(1).flatMap { i => pairsWith(i) #::: pairsWithNeg(i) }
+    def pairsPosandNeg(n: Int): Stream[(Int, Int)] =
+      (for (i <- 0 to maxSize + 1) yield (i, -n)).toStream
+
+    from(1).flatMap { i => pairsWith(i) #::: pairsWithNeg(i) #::: pairsPosandNeg(i) }
   }
 
-  // genSubstring(List(("hehe", "he"))) will yield 4 solutions, (-3, -1), (0, 2), (-5, -3), (2, 4)
+  // genSubstring(List(("hehe", "he"))) will yield 6 solutions, (-3, -1), (0, 2), (-5, -3), (2, 4), (0, -3), (2, -1)
 }
 
 /**
