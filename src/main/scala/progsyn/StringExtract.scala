@@ -247,17 +247,11 @@ object StringExtract extends Solution4 {
     println("Hi!")
 
     val examples = List(
-      ("hehe", "he"),
-      ("hello", "he")
+      ("abc def ghi", "def"),
+      ("asdfasdf 123a asdfasdf", "123a")
     )
 
-    //val progTree = Substring(
-    //  StrSym,
-    //  RegexPos(StrSym, "\\d+".r , "".r, 0),
-    //  RegexPos(StrSym, "".r , "\\d+".r , -1)
-    //)
-
     println(genSubstring(examples).take(10).toList)
-    //println(eval(progTree, "asdf123asdfad321asdfds"))
+
   }
 }
