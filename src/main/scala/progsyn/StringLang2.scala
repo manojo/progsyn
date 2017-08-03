@@ -32,21 +32,11 @@ trait StringLang2 {
     case Substring(_, l, r) => for {
       i <- eval(l, s)
       j <- eval(r, s)
-    } yield funkysub(s, i, j)
-  }
-
-  /**
-   * returns the empty string if positions don't match
-   * negative indices are used to indicate going backwards
-   * ex: funkysub("hello", -2, -1) should yield "o"
-   */
-  def funkysub(s: String, start: Int, end: Int): String = {
-    def absidx(k: Int, len: Int): Int = if (k >= 0) k else (len + k + 1)
-    s.slice(absidx(start, s.length), absidx(end, s.length))
+    } yield s.slice(i, j)
   }
 
   def eval(p: Pos, s: String): Option[Int] = p match {
-    case AbsPos(_, i) => Some(i)
+    case AbsPos(_, i) => Some(if (i >= 0) i else (s.length + i + 1))
     case RegexPos(v, lreg, rreg, num) =>
 
       /**
