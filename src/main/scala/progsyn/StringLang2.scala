@@ -71,11 +71,10 @@ trait Solver extends StringLang2 {
    * Given a specification for Substring, can I get a specification for pos?
    * i.e. I need to find out which positions are of interest.
    */
-  def specForPos(examples: List[(String, String)]): List[(String, List[(Int, Int)])]
+  def specForPos(examples: List[(String, String)]): List[(String, Set[(Int, Int)])]
 
   /**
    *
    */
-  def specForAbsPos(spec: List[(String, List[Int])]): List[(String, List[Int])]
-  def specForRegexPos(spec: List[(String, List[Int])]): List[(String, List[Regex])]
+  def specForAbsPos(spec: List[(String, Set[Int])]): List[(String, Set[Int])]
 }
