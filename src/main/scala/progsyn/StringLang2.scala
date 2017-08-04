@@ -55,4 +55,27 @@ trait StringLang2 {
       else if (num < 0 && -num <= len) Some(relevantPoses(len + num))
       else None
   }
+
+  def solve(examples: List[(String, String)]): Stream[Exp] =
+    genExp(examples)
+
+  def genExp(examples: List[(String, String)]): Stream[Exp] =
+    genSubstring(examples)
+
+  def genSubstring(examples: List[(String, String)]): Stream[Exp]
+}
+
+trait Solver extends StringLang2 {
+
+  /**
+   * Given a specification for Substring, can I get a specification for pos?
+   * i.e. I need to find out which positions are of interest.
+   */
+  def specForPos(examples: List[(String, String)]): List[(String, List[(Int, Int)])]
+
+  /**
+   *
+   */
+  def specForAbsPos(spec: List[(String, List[Int])]): List[(String, List[Int])]
+  def specForRegexPos(spec: List[(String, List[Int])]): List[(String, List[Regex])]
 }
