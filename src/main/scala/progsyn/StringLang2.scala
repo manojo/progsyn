@@ -74,7 +74,50 @@ trait Solver extends StringLang2 {
   def specForPos(examples: List[(String, String)]): List[(String, Set[(Int, Int)])]
 
   /**
-   *
+   * Given an idx, where could the parameter of AbsPos come from?
    */
   def specForAbsPos(spec: List[(String, Set[Int])]): List[(String, Set[Int])]
+
+  /**
+   * given an idx, what regex-es could have matched?
+   */
+  def specForRegexPos(spec: List[(String, Set[Int])]): List[(String, Set[(Regex, Regex)])]
+
+  /**
+   * Based on the above specs we can create a generator for substrings
+   */
+  def genSubstring(examples: List[(String, String)]): Stream[Exp] = {
+    val posSpec: List[(String, Set[(Int, Int)])] = specForPos(examples)
+    genPos(posSpec).map { case (pos1, pos2) => Substring(StrSym, pos1, pos2) }
+  }
+
+  def genPos(posSpec: List[(String, Set[(Int, Int)])]): Stream[(Pos, Pos)] = {
+    val leftInts = posSpec.map { case (str, ls) => (str, ls.map(_._1)) }
+    val rightInts = posSpec.map { case (str, ls) => (str, ls.map(_._2)) }
+
+    val leftPossiblePoses = genAbsPos(leftInts) #::: genRegPos(leftInts)
+    val rightPossiblePoses = genAbsPos(rightInts) #::: genRegPos(rightInts)
+
+    for (lPos <- leftPossiblePoses; rPos <- rightPossiblePoses) yield (lPos, rPos)
+  }
+
+  /**
+   * Among the input strings, reverse engineer the position, and keep those
+   * which appear in all examples
+   */
+  def genAbsPos(posSpec: List[(String, Set[Int])]): Stream[Pos] = {
+    val possibleInts: List[(String, Set[Int])] = specForAbsPos(posSpec)
+    val onlyIdxes = possibleInts.map(_._2)
+    val relevantIdxes = onlyIdxes.foldLeft[Set[Int]](Set.empty){ case (acc, ls) =>
+      acc intersect ls
+    }
+    relevantIdxes.map(x => AbsPos(StrSym, x)).toStream
+  }
+
+
+  def genRegPos(posSpec: List[(String, Set[Int])]): Stream[Pos] /* = {
+    val possibleRegs: List[(String, Set[(Regex, Regex)])] = specForRegexPos(posSpec)
+    val
+  }
+*/
 }
