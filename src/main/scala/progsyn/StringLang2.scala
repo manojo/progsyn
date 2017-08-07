@@ -108,8 +108,11 @@ trait Solver extends StringLang2 {
   def genAbsPos(posSpec: List[(String, Set[Int])]): Stream[Pos] = {
     val possibleInts: List[(String, Set[Int])] = specForAbsPos(posSpec)
     val onlyIdxes = possibleInts.map(_._2)
-    val relevantIdxes = onlyIdxes.foldLeft[Set[Int]](Set.empty){ case (acc, ls) =>
-      acc intersect ls
+    val relevantIdxes: Set[Int] = onlyIdxes match {
+      case Nil => Set.empty
+      case x :: xs => xs.foldLeft(x){ case (acc, ls) =>
+        acc intersect ls
+      }
     }
     relevantIdxes.map(x => AbsPos(StrSym, x)).toStream
   }
