@@ -79,9 +79,9 @@ trait Solver extends StringLang2 {
   def specForAbsPos(spec: List[(String, Set[Int])]): List[(String, Set[Int])]
 
   /**
-   * given an idx, what regex-es could have matched?
+   * given an idx, what regex-es could have matched, and where?
    */
-  def specForRegexPos(spec: List[(String, Set[Int])]): List[(String, Set[(Regex, Regex)])]
+  def specForRegexPos(spec: List[(String, Set[Int])]): List[(String, Set[(Regex, Regex, Int)])]
 
   /**
    * Based on the above specs we can create a generator for substrings
@@ -117,10 +117,20 @@ trait Solver extends StringLang2 {
     relevantIdxes.map(x => AbsPos(StrSym, x)).toStream
   }
 
-
-  def genRegPos(posSpec: List[(String, Set[Int])]): Stream[Pos] /* = {
-    val possibleRegs: List[(String, Set[(Regex, Regex)])] = specForRegexPos(posSpec)
-    val
+  /**
+   * Among the regex and index triples, pick those that appear in all
+   * examples
+   */
+  def genRegPos(posSpec: List[(String, Set[Int])]): Stream[Pos] = {
+    val possibleRegs: List[(String, Set[(Regex, Regex, Int)])] = specForRegexPos(posSpec)
+    val onlyTriples = possibleRegs map (_._2)
+    val relevantTriples: Set[(Regex, Regex, Int)] = onlyTriples match {
+      case Nil => Set.empty
+      case x :: xs => xs.foldLeft(x){ case (acc, ls) =>
+        acc intersect ls
+      }
+    }
+    relevantTriples.map { case (r1, r2, idx) => RegexPos(StrSym, r1, r2, idx) }.toStream
   }
-*/
+
 }
