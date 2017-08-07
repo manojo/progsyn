@@ -63,10 +63,8 @@ trait StringLang2 {
     genSubstring(examples)
 
   def genSubstring(examples: List[(String, String)]): Stream[Exp]
-}
 
-trait Solver extends StringLang2 {
-
+  /**===================== SPECIFICATIONS =================================*/
   /**
    * Given a specification for Substring, can I get a specification for pos?
    * i.e. I need to find out which positions are of interest.
@@ -82,6 +80,15 @@ trait Solver extends StringLang2 {
    * given an idx, what regex-es could have matched, and where?
    */
   def specForRegexPos(spec: List[(String, Set[Int])]): List[(String, Set[(Regex, Regex, Int)])]
+}
+
+/**
+ * This trait implements the generation of substrings (interface provided above)
+ * These methods are fairly straightforward and generic to implement, and ideally
+ * shouldn't require a developer (they should rather be taken care of by the
+ * framework)
+ */
+trait Generators extends StringLang2 {
 
   /**
    * Based on the above specs we can create a generator for substrings
