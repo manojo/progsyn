@@ -56,8 +56,11 @@ trait StringLang2 {
       else None
   }
 
-  def solve(examples: List[(String, String)]): Stream[Exp] =
-    genExp(examples)
+  def solve(examples: List[(String, String)]): Stream[Exp] = {
+    genExp(examples).filter {
+      substr => examples.forall { case (in, out) => eval(substr, in) == Some(out) }
+    }
+  }
 
   def genExp(examples: List[(String, String)]): Stream[Exp] =
     genSubstring(examples)
