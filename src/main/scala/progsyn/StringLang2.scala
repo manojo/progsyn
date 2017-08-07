@@ -144,3 +144,92 @@ trait Generators extends StringLang2 {
   }
 
 }
+
+/**
+ * This trait implements the specifications declared above
+ */
+trait Specs extends StringLang2 with Generators {
+
+  /**
+   * Given a specification for Substring, can I get a specification for pos?
+   * i.e. I need to find out which positions are of interest.
+   */
+  def specForPos(examples: List[(String, String)]): List[(String, Set[(Int, Int)])] = {
+    for ((input, output) <- examples) yield {
+      (input, output.r.findAllMatchIn(input).map(x => (x.start, x.end)).toSet)
+    }
+  }
+
+  /**
+   * Given an idx, where could the parameter of AbsPos come from?
+   * It could either be the idx itself, or, since we accept negative indices
+   * (for referring to positions from the back of the string), the relevant
+   * opposite
+   */
+  def specForAbsPos(spec: List[(String, Set[Int])]): List[(String, Set[Int])] = {
+    for ((inputstr, idxes) <- spec) yield {
+      (inputstr, idxes.flatMap(idx => Set(idx, inputstr.length - idx)))
+    }
+  }
+
+  /**
+   * given an idx, what regex-es could have matched, and where?
+   */
+  def specForRegexPos(spec: List[(String, Set[Int])]): List[(String, Set[(Regex, Regex, Int)])] = {
+
+    val allowedRegexes: List[Regex] = List(
+      "".r, //empty
+      "\\d".r, //digits
+      "\\d+".r,
+      "[a-zA-Z]".r, //letters
+      "[a-zA-Z]+".r,
+      "\\s".r, //spaces
+      "\\s+".r
+    )
+
+    val inputsOnly = spec.map(_._1)
+
+    // filter all regexes from the list which match at least once
+    // in all examples
+    val relevantRegexes = allowedRegexes.filter { regex =>
+      inputsOnly.forall { in => !regex.findFirstIn(in).isEmpty }
+    }.toSet
+
+    for ((inputstr, idxes) <- spec) yield {
+      val regexPairs = for {
+        r1 <- relevantRegexes
+        r2 <- relevantRegexes - r1
+      } yield (r1, r2)
+
+      val triplesOfInterest = regexPairs.foldLeft(Set.empty[(Regex, Regex, Int)]) { case (acc, (lreg, rreg)) =>
+        val lregEndings = lreg.findAllMatchIn(inputstr).map(_.end)
+        val rregBeginnings = rreg.findAllMatchIn(inputstr).map(_.start).toSet
+
+        val relevantPoses =
+          lregEndings.filter(pos => rregBeginnings.contains(pos))
+
+        if (relevantPoses.isEmpty) acc
+        else {
+          val len = relevantPoses.length
+          val positions = (0 until len) ++ (-1 to -len by -1)
+          acc union (positions.map((lreg, rreg, _)).toSet)
+        }
+      }
+
+      (inputstr, triplesOfInterest)
+    }
+  }
+}
+
+object PlayGround extends Specs {
+  def main(args: Array[String]) {
+    println("oh hai!!")
+
+    val examples = List(
+      ("abc def ghi", "def"),
+      ("asdfasdf 123a asdfasdf", "123a")
+    )
+
+    println(solve(examples).take(5).toList)
+  }
+}
