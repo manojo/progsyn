@@ -27,7 +27,7 @@ trait StringLang2 {
   case class RegexPos(v: StrSym.type, lreg: Regex, rreg: Regex, num: Int) extends Pos
 
 
-  /**===================== SEMANTICS ===========================================*/
+  /**===================== SEMANTICS =========================================*/
   def eval(e: Exp, s: String): Option[String] = e match {
     case Substring(_, l, r) => for {
       i <- eval(l, s)
