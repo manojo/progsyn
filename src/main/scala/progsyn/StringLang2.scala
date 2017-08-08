@@ -7,7 +7,7 @@ import scala.util.matching.Regex
  * The goal is to make the `witness` functions more visible, rather
  * than baking them into the implementation of generators
  */
-trait StringLang2 {
+trait StringLang2 { self: ConstraintSpecs =>
 
   /** A string symbol */
   case object StrSym
@@ -91,7 +91,7 @@ trait StringLang2 {
  * shouldn't require a developer (they should rather be taken care of by the
  * framework)
  */
-trait Generators extends StringLang2 {
+trait Generators extends StringLang2 { self: ConstraintSpecs =>
 
   /**
    * Based on the above specs we can create a generator for substrings
@@ -148,7 +148,7 @@ trait Generators extends StringLang2 {
 /**
  * This trait implements the specifications declared above
  */
-trait Specs extends StringLang2 with Generators {
+trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
 
   /**
    * Given a specification for Substring, can I get a specification for pos?
@@ -221,7 +221,29 @@ trait Specs extends StringLang2 with Generators {
   }
 }
 
-object PlayGround extends Specs {
+trait ConstraintSpecs extends StringLang2 with Generators {
+  abstract class Bool {
+    def and(that: Bool): Bool = And(this, that)
+    def or(that: Bool): Bool = Or(this, that)
+  }
+
+  case object True extends Bool
+  case object False extends Bool
+  case class And(l: Bool, r: Bool) extends Bool
+  case class Or(l: Bool, r: Bool) extends Bool
+  case class Matches(s: StrSym.type, r: Regex) extends Bool
+
+  def eval(b: Bool)(implicit str: String): Boolean = b match {
+    case True => true
+    case False => false
+    case And(l, r) => eval(l) && eval(r)
+    case Or(l, r) => eval(l) && eval(r)
+    case Matches(_, reg) => reg.findFirstIn(str).isEmpty
+  }
+}
+
+object PlayGround extends Specs with ConstraintSpecs {
+
   def main(args: Array[String]) {
     println("oh hai!!")
 
