@@ -226,8 +226,8 @@ object PlayGround extends Specs {
     println("oh hai!!")
 
     val examples = List(
-      ("abc def ghi", "def"),
-      ("asdfasdf 123a asdfasdf", "123a")
+      ("abc 124 def 247 ghi 77854", "247"),
+      ("124 asdfasdf 123a asdfasdf 232 ", "232")
     )
 
     println(solve(examples).take(5).toList)
