@@ -9,8 +9,9 @@ import scala.util.matching.Regex
  */
 trait StringLang2 { self: ConstraintSpecs =>
 
-  /** A string symbol */
+  /** symbols representing variables of certain types */
   case object StrSym
+  case object IntSym
 
   /** A substring expression */
   sealed trait Exp
@@ -248,6 +249,8 @@ trait ConstraintSpecs { self: StringLang2 with Generators =>
   case class And(l: Bool, r: Bool) extends Bool
   case class Or(l: Bool, r: Bool) extends Bool
   case class IsNum(s: StrSym.type) extends Bool
+  case class IsNumStart(i: IntSym.type) extends Bool
+  case class IsNumEnd(i: IntSym.type) extends Bool
 
   def eval(b: Bool)(implicit str: String): Boolean = b match {
     case True => true
@@ -255,6 +258,7 @@ trait ConstraintSpecs { self: StringLang2 with Generators =>
     case And(l, r) => eval(l) && eval(r)
     case Or(l, r) => eval(l) && eval(r)
     case IsNum(_) => !("\\d+".r).findFirstIn(str).isEmpty
+    case _ => ??? //<-- TODO: implement full behaviour?
   }
 }
 
