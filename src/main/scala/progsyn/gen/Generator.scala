@@ -1,4 +1,4 @@
-/*package gen
+/*package progsyn.gen
 
 import scala.collection.immutable.Queue
 

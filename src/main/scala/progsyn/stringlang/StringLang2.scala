@@ -1,4 +1,4 @@
-package progsyn
+package progsyn.stringlang
 
 import scala.util.matching.Regex
 

@@ -1,4 +1,4 @@
-package grammar
+package progsyn.grammar
 
 trait Grammars {
 

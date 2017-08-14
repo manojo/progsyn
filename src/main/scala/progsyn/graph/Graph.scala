@@ -1,4 +1,4 @@
-package graph
+package progsyn.graph
 
 import scala.reflect.ClassTag
 

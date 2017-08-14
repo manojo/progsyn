@@ -1,8 +1,8 @@
-package traversal
+package progsyn.traversal
 
 import scala.reflect.ClassTag
 
-import graph._
+import progsyn.graph._
 import scala.collection.immutable.Queue
 
 trait Traversal {
