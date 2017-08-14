@@ -91,6 +91,17 @@ trait StringLang2 { self: ConstraintSpecs =>
    * The input is fixed to be string here, for now.
    */
   case class Spec[T](exampleSpec: List[(String, T)], constraint: Bool)
+
+  /** ====================== UTIL ==================================*/
+  final val allowedRegexes: List[Regex] = List(
+    "".r, //empty
+    "\\d".r, //digits
+    "\\b\\d+\\b".r,
+    "[a-zA-Z]".r, //letters
+    "\\b[a-zA-Z]+\\b".r,
+    "\\s|^|$".r, //spaces
+    "\\s+".r
+  )
 }
 
 /**
@@ -190,16 +201,6 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
    * given an idx, what regex-es could have matched, and where?
    */
   def specForRegexPos(spec: Spec[Set[Int]]): Spec[Set[(Regex, Regex, Int)]] = {
-
-    val allowedRegexes: List[Regex] = List(
-      "".r, //empty
-      "\\d".r, //digits
-      "\\b\\d+\\b".r,
-      "[a-zA-Z]".r, //letters
-      "\\b[a-zA-Z]+\\b".r,
-      "\\s|^|$".r, //spaces
-      "\\s+".r
-    )
 
     val inputsOnly = spec.exampleSpec.map(_._1)
 
