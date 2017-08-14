@@ -83,6 +83,13 @@ trait StringLang2 { self: ConstraintSpecs =>
    * given an idx, what regex-es could have matched, and where?
    */
   def specForRegexPos(spec: List[(String, Set[Int])])(constraint: Bool): List[(String, Set[(Regex, Regex, Int)])]
+  /**====================== CONTEXT =======================================*/
+  /**
+   * A class representing a Specification
+   * A specification is made of examples, and a formal constraint
+   * The input is fixed to be string here, for now.
+   */
+  case class Spec[T](exampleSpec: List[(String, T)], constraint: Bool)
 }
 
 /**
