@@ -56,33 +56,34 @@ trait StringLang2 { self: ConstraintSpecs =>
       else None
   }
 
-  def solve(examples: List[(String, String)])(constraint: Bool): Stream[Exp] = {
-    genExp(examples)(constraint).filter {
-      substr => examples.forall { case (in, out) => eval(substr, in) == Some(out) }
+  def solve(spec: Spec[String]): Stream[Exp] = {
+    genExp(spec).filter {
+      substr => spec.exampleSpec.forall { case (in, out) => eval(substr, in) == Some(out) }
     }
   }
 
-  def genExp(examples: List[(String, String)])(constraint: Bool): Stream[Exp] =
-    genSubstring(examples)(constraint)
+  def genExp(spec: Spec[String]): Stream[Exp] =
+    genSubstring(spec)
 
-  def genSubstring(examples: List[(String, String)])(constraint: Bool): Stream[Exp]
+  def genSubstring(spec: Spec[String]): Stream[Exp]
 
   /**===================== SPECIFICATIONS =================================*/
   /**
    * Given a specification for Substring, can I get a specification for pos?
    * i.e. I need to find out which positions are of interest.
    */
-  def specForPos(examples: List[(String, String)])(constraint: Bool): List[(String, Set[(Int, Int)])]
+  def specForPos(spec: Spec[String]): Spec[Set[(Int, Int)]]
 
   /**
    * Given an idx, where could the parameter of AbsPos come from?
    */
-  def specForAbsPos(spec: List[(String, Set[Int])])(constraint: Bool): List[(String, Set[Int])]
+  def specForAbsPos(spec: Spec[Set[Int]]): Spec[Set[Int]]
 
   /**
    * given an idx, what regex-es could have matched, and where?
    */
-  def specForRegexPos(spec: List[(String, Set[Int])])(constraint: Bool): List[(String, Set[(Regex, Regex, Int)])]
+  def specForRegexPos(spec: Spec[Set[Int]]): Spec[Set[(Regex, Regex, Int)]]
+
   /**====================== CONTEXT =======================================*/
   /**
    * A class representing a Specification
@@ -103,17 +104,19 @@ trait Generators extends StringLang2 { self: ConstraintSpecs =>
   /**
    * Based on the above specs we can create a generator for substrings
    */
-  def genSubstring(examples: List[(String, String)])(constraint: Bool): Stream[Exp] = {
-    val posSpec: List[(String, Set[(Int, Int)])] = specForPos(examples)(constraint)
-    genPos(posSpec)(constraint).map { case (pos1, pos2) => Substring(StrSym, pos1, pos2) }
+  def genSubstring(spec: Spec[String]): Stream[Exp] = {
+    val posSpec: Spec[Set[(Int, Int)]] = specForPos(spec)
+    genPos(posSpec).map { case (pos1, pos2) => Substring(StrSym, pos1, pos2) }
   }
 
-  def genPos(posSpec: List[(String, Set[(Int, Int)])])(constraint: Bool): Stream[(Pos, Pos)] = {
-    val leftInts = posSpec.map { case (str, ls) => (str, ls.map(_._1)) }
-    val rightInts = posSpec.map { case (str, ls) => (str, ls.map(_._2)) }
+  def genPos(spec: Spec[Set[(Int, Int)]]): Stream[(Pos, Pos)] = {
+    val leftInts = spec.exampleSpec.map { case (str, ls) => (str, ls.map(_._1)) }
+    val rightInts = spec.exampleSpec.map { case (str, ls) => (str, ls.map(_._2)) }
 
-    val leftPossiblePoses = genAbsPos(leftInts)(constraint) #::: genRegPos(leftInts)(constraint)
-    val rightPossiblePoses = genAbsPos(rightInts)(constraint) #::: genRegPos(rightInts)(constraint)
+    val leftPossiblePoses =
+      genAbsPos(Spec(leftInts, spec.constraint)) #::: genRegPos(Spec(leftInts, spec.constraint))
+    val rightPossiblePoses =
+      genAbsPos(Spec(rightInts, spec.constraint)) #::: genRegPos(Spec(rightInts, spec.constraint))
 
     for (lPos <- leftPossiblePoses; rPos <- rightPossiblePoses) yield (lPos, rPos)
   }
@@ -122,9 +125,9 @@ trait Generators extends StringLang2 { self: ConstraintSpecs =>
    * Among the input strings, reverse engineer the position, and keep those
    * which appear in all examples
    */
-  def genAbsPos(posSpec: List[(String, Set[Int])])(constraint: Bool): Stream[Pos] = {
-    val possibleInts: List[(String, Set[Int])] = specForAbsPos(posSpec)(constraint)
-    val onlyIdxes = possibleInts.map(_._2)
+  def genAbsPos(spec: Spec[Set[Int]]): Stream[Pos] = {
+    val possibleInts: Spec[Set[Int]] = specForAbsPos(spec)
+    val onlyIdxes = possibleInts.exampleSpec.map(_._2)
     val relevantIdxes: Set[Int] = onlyIdxes match {
       case Nil => Set.empty
       case x :: xs => xs.foldLeft(x){ case (acc, ls) =>
@@ -138,9 +141,9 @@ trait Generators extends StringLang2 { self: ConstraintSpecs =>
    * Among the regex and index triples, pick those that appear in all
    * examples
    */
-  def genRegPos(posSpec: List[(String, Set[Int])])(constraint: Bool): Stream[Pos] = {
-    val possibleRegs: List[(String, Set[(Regex, Regex, Int)])] = specForRegexPos(posSpec)(constraint)
-    val onlyTriples = possibleRegs map (_._2)
+  def genRegPos(spec: Spec[Set[Int]]): Stream[Pos] = {
+    val possibleRegs: Spec[Set[(Regex, Regex, Int)]] = specForRegexPos(spec)
+    val onlyTriples = possibleRegs.exampleSpec map (_._2)
     val relevantTriples: Set[(Regex, Regex, Int)] = onlyTriples match {
       case Nil => Set.empty
       case x :: xs => xs.foldLeft(x){ case (acc, ls) =>
@@ -160,11 +163,14 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
   /**
    * Given a specification for Substring, can I get a specification for pos?
    * i.e. I need to find out which positions are of interest.
+   *
+   * The set of constraints we have don't apply here, so we return it as is
    */
-  def specForPos(examples: List[(String, String)])(constraint: Bool): List[(String, Set[(Int, Int)])] = {
-    for ((input, output) <- examples) yield {
+  def specForPos(spec: Spec[String]): Spec[Set[(Int, Int)]] = {
+    val exSpec = for ((input, output) <- spec.exampleSpec) yield {
       (input, output.r.findAllMatchIn(input).map(x => (x.start, x.end)).toSet)
     }
+    Spec(exSpec, spec.constraint)
   }
 
   /**
@@ -173,16 +179,17 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
    * (for referring to positions from the back of the string), the relevant
    * opposite
    */
-  def specForAbsPos(spec: List[(String, Set[Int])])(constraint: Bool): List[(String, Set[Int])] = {
-    for ((inputstr, idxes) <- spec) yield {
+  def specForAbsPos(spec: Spec[Set[Int]]): Spec[Set[Int]] = {
+    val exSpec = for ((inputstr, idxes) <- spec.exampleSpec) yield {
       (inputstr, idxes.flatMap(idx => Set(idx, inputstr.length - idx)))
     }
+    Spec(exSpec, spec.constraint)
   }
 
   /**
    * given an idx, what regex-es could have matched, and where?
    */
-  def specForRegexPos(spec: List[(String, Set[Int])])(constraint: Bool): List[(String, Set[(Regex, Regex, Int)])] = {
+  def specForRegexPos(spec: Spec[Set[Int]]): Spec[Set[(Regex, Regex, Int)]] = {
 
     val allowedRegexes: List[Regex] = List(
       "".r, //empty
@@ -194,7 +201,7 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
       "\\s+".r
     )
 
-    val inputsOnly = spec.map(_._1)
+    val inputsOnly = spec.exampleSpec.map(_._1)
 
     // filter all regexes from the list which match at least once
     // in all examples
@@ -202,7 +209,7 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
       inputsOnly.forall { in => !regex.findFirstIn(in).isEmpty }
     }.toSet
 
-    for ((inputstr, idxes) <- spec) yield {
+    val exSpec = for ((inputstr, idxes) <- spec.exampleSpec) yield {
       val regexPairs = for {
         r1 <- relevantRegexes
         r2 <- relevantRegexes - r1
@@ -225,6 +232,7 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
 
       (inputstr, triplesOfInterest)
     }
+    Spec(exSpec, spec.constraint)
   }
 }
 
@@ -261,6 +269,6 @@ object PlayGround extends Specs with ConstraintSpecs {
 
     val constraint = Matches(StrSym, "\\d+".r)
 
-    println(solve(examples)(constraint).take(5).toList)
+    println(solve(Spec(examples, constraint)).take(5).toList)
   }
 }
