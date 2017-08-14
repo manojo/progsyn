@@ -180,10 +180,10 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
     val allowedRegexes: List[Regex] = List(
       "".r, //empty
       "\\d".r, //digits
-      "\\d+".r,
+      "\\b\\d+\\b".r,
       "[a-zA-Z]".r, //letters
-      "[a-zA-Z]+".r,
-      "\\s".r, //spaces
+      "\\b[a-zA-Z]+\\b".r,
+      "\\s|^|$".r, //spaces
       "\\s+".r
     )
 
@@ -248,8 +248,8 @@ object PlayGround extends Specs with ConstraintSpecs {
     println("oh hai!!")
 
     val examples = List(
-      ("abc 124 def 247 ghi 77854", "247"),
-      ("124 asdfasdf 123a asdfasdf 232 ", "232")
+      ("abc 124 def 247 ghi 77854", "def"),
+      ("124 asdfasdf 123a abc 232", "abc")
     )
 
     val constraint = Matches(StrSym, "\\d+".r)
