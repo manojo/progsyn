@@ -211,49 +211,61 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
    * opposite
    */
   def specForAbsPos(spec: Spec[Set[Int]]): Spec[Set[Int]] = {
-    val exSpec = for ((inputstr, idxes) <- spec.exampleSpec) yield {
-      (inputstr, idxes.flatMap(idx => Set(idx, inputstr.length - idx)))
+    val Spec(exampleSpec, constraint) = spec
+    constraint match {
+      /** should we send this constraint down further, or just false? */
+      case IsNum(_) => Spec(Nil, False)
+      case _ =>
+        val exSpec = for ((inputstr, idxes) <- exampleSpec) yield {
+          (inputstr, idxes.flatMap(idx => Set(idx, inputstr.length - idx)))
+        }
+        Spec(exSpec, constraint)
     }
-    Spec(exSpec, spec.constraint)
   }
 
   /**
    * given an idx, what regex-es could have matched, and where?
    */
   def specForRegexPos(spec: Spec[Set[Int]]): Spec[Set[(Regex, Regex, Int)]] = {
+    val Spec(exampleSpec, constraint) = spec
 
     val inputsOnly = spec.exampleSpec.map(_._1)
 
-    // filter all regexes from the list which match at least once
-    // in all examples
-    val relevantRegexes = allowedRegexes.filter { regex =>
-      inputsOnly.forall { in => !regex.findFirstIn(in).isEmpty }
-    }.toSet
+    //constraint match {
+    //  case IsNumber(_) =>
+    //    val regexPairs = Set(
+    //      ()
+    //    )
+    //  case _ =>
+        // filter all regexes from the list which match at least once
+        // in all examples
+        val relevantRegexes = allowedRegexes.filter { regex =>
+          inputsOnly.forall { in => !regex.findFirstIn(in).isEmpty }
+        }.toSet
 
-    val exSpec = for ((inputstr, idxes) <- spec.exampleSpec) yield {
-      val regexPairs = for {
-        r1 <- relevantRegexes
-        r2 <- relevantRegexes - r1
-      } yield (r1, r2)
+        val exSpec = for ((inputstr, idxes) <- spec.exampleSpec) yield {
+          val regexPairs = for {
+            r1 <- relevantRegexes
+            r2 <- relevantRegexes - r1
+          } yield (r1, r2)
 
-      val triplesOfInterest = regexPairs.foldLeft(Set.empty[(Regex, Regex, Int)]) { case (acc, (lreg, rreg)) =>
-        val lregEndings = lreg.findAllMatchIn(inputstr).map(_.end)
-        val rregBeginnings = rreg.findAllMatchIn(inputstr).map(_.start).toSet
+          val triplesOfInterest = regexPairs.foldLeft(Set.empty[(Regex, Regex, Int)]) { case (acc, (lreg, rreg)) =>
+            val lregEndings = lreg.findAllMatchIn(inputstr).map(_.end)
+            val rregBeginnings = rreg.findAllMatchIn(inputstr).map(_.start).toSet
 
-        val relevantPoses =
-          lregEndings.filter(pos => rregBeginnings.contains(pos))
+            val relevantPoses = lregEndings.filter(pos => rregBeginnings.contains(pos))
 
-        if (relevantPoses.isEmpty) acc
-        else {
-          val len = relevantPoses.length
-          val positions = (0 until len) ++ (-1 to -len by -1)
-          acc union (positions.map((lreg, rreg, _)).toSet)
-        }
+            if (relevantPoses.isEmpty) acc
+            else {
+              val len = relevantPoses.length
+              val positions = (0 until len) ++ (-1 to -len by -1)
+              acc union (positions.map((lreg, rreg, _)).toSet)
+            }
+          }
+        (inputstr, triplesOfInterest)
       }
-
-      (inputstr, triplesOfInterest)
-    }
-    Spec(exSpec, spec.constraint)
+      Spec(exSpec, constraint)
+    //}
   }
 }
 
