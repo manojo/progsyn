@@ -73,7 +73,7 @@ trait StringLang2 { self: ConstraintSpecs =>
    * Given a specification for Substring, can I get a specification for pos?
    * i.e. I need to find out which positions are of interest.
    */
-  def specForPos(spec: Spec[String]): Spec[Set[(Int, Int)]]
+  def specsForPos(spec: Spec[String]): (Spec[Set[Int]], Spec[Set[Int]])
 
   /**
    * Given an idx, where could the parameter of AbsPos come from?
@@ -117,18 +117,18 @@ trait Generators extends StringLang2 { self: ConstraintSpecs =>
    * Based on the above specs we can create a generator for substrings
    */
   def genSubstring(spec: Spec[String]): Stream[Exp] = {
-    val posSpec: Spec[Set[(Int, Int)]] = specForPos(spec)
-    genPos(posSpec).map { case (pos1, pos2) => Substring(StrSym, pos1, pos2) }
+    val (leftSpec, rightSpec) = specsForPos(spec)
+    genPos(leftSpec, rightSpec).map { case (pos1, pos2) => Substring(StrSym, pos1, pos2) }
   }
 
-  def genPos(spec: Spec[Set[(Int, Int)]]): Stream[(Pos, Pos)] = {
-    val leftInts = spec.exampleSpec.map { case (str, ls) => (str, ls.map(_._1)) }
-    val rightInts = spec.exampleSpec.map { case (str, ls) => (str, ls.map(_._2)) }
+  def genPos(leftSpec: Spec[Set[Int]], rightSpec: Spec[Set[Int]]): Stream[(Pos, Pos)] = {
+    val Spec(leftInts, leftConstr) = leftSpec
+    val Spec(rightInts, rightConstr) = rightSpec
 
     val leftPossiblePoses =
-      genAbsPos(Spec(leftInts, spec.constraint)) #::: genRegPos(Spec(leftInts, spec.constraint))
+      genAbsPos(Spec(leftInts, leftConstr)) #::: genRegPos(Spec(leftInts, leftConstr))
     val rightPossiblePoses =
-      genAbsPos(Spec(rightInts, spec.constraint)) #::: genRegPos(Spec(rightInts, spec.constraint))
+      genAbsPos(Spec(rightInts, rightConstr)) #::: genRegPos(Spec(rightInts, rightConstr))
 
     for (lPos <- leftPossiblePoses; rPos <- rightPossiblePoses) yield (lPos, rPos)
   }
@@ -164,7 +164,6 @@ trait Generators extends StringLang2 { self: ConstraintSpecs =>
     }
     relevantTriples.map { case (r1, r2, idx) => RegexPos(StrSym, r1, r2, idx) }.toStream
   }
-
 }
 
 /**
@@ -178,11 +177,31 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
    *
    * The set of constraints we have don't apply here, so we return it as is
    */
-  def specForPos(spec: Spec[String]): Spec[Set[(Int, Int)]] = {
-    val exSpec = for ((input, output) <- spec.exampleSpec) yield {
+  def specsForPos(spec: Spec[String]): (Spec[Set[Int]], Spec[Set[Int]]) = {
+
+    /**
+     * We modify the outer constraints to reflect constraints on positions
+     */
+    val newLeftConstr = spec.constraint match {
+      case IsNum(_) => IsNumStart(IntSym)
+      case _ => spec.constraint //<-- should this constraint be carried over?
+    }
+
+    val newRightConstr = spec.constraint match {
+      case IsNum(_) => IsNumEnd(IntSym)
+      case _ => spec.constraint //<-- should this constraint be carried over?
+    }
+
+    val exSpecs: List[(String, Set[(Int, Int)])] = for ((input, output) <- spec.exampleSpec) yield {
       (input, output.r.findAllMatchIn(input).map(x => (x.start, x.end)).toSet)
     }
-    Spec(exSpec, spec.constraint)
+
+    val (leftExamples, rightExamples) = (
+      exSpecs.map { case (in, tuples) => (in, tuples.map(_._1)) },
+      exSpecs.map { case (in, tuples) => (in, tuples.map(_._2)) }
+    )
+
+    (Spec(leftExamples, newRightConstr), Spec(rightExamples, newRightConstr))
   }
 
   /**
