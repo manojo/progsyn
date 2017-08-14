@@ -236,7 +236,7 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
   }
 }
 
-trait ConstraintSpecs extends StringLang2 with Generators {
+trait ConstraintSpecs { self: StringLang2 with Generators =>
   abstract class Bool {
     def and(that: Bool): Bool = And(this, that)
     def or(that: Bool): Bool = Or(this, that)
