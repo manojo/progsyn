@@ -247,14 +247,14 @@ trait ConstraintSpecs { self: StringLang2 with Generators =>
   case object False extends Bool
   case class And(l: Bool, r: Bool) extends Bool
   case class Or(l: Bool, r: Bool) extends Bool
-  case class IsNumber(s: StrSym.type) extends Bool
+  case class IsNum(s: StrSym.type) extends Bool
 
   def eval(b: Bool)(implicit str: String): Boolean = b match {
     case True => true
     case False => false
     case And(l, r) => eval(l) && eval(r)
     case Or(l, r) => eval(l) && eval(r)
-    case IsNumber(_) => !("\\d+".r).findFirstIn(str).isEmpty
+    case IsNum(_) => !("\\d+".r).findFirstIn(str).isEmpty
   }
 }
 
@@ -268,7 +268,7 @@ object PlayGround extends Specs with ConstraintSpecs {
       ("124 asdfasdf 123a abc 232", "abc")
     )
 
-    val constraint = IsNumber(StrSym)
+    val constraint = IsNum(StrSym)
     println(solve(Spec(examples, constraint)).take(5).toList)
   }
 }
