@@ -201,7 +201,7 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
       exSpecs.map { case (in, tuples) => (in, tuples.map(_._2)) }
     )
 
-    (Spec(leftExamples, newRightConstr), Spec(rightExamples, newRightConstr))
+    (Spec(leftExamples, newLeftConstr), Spec(rightExamples, newRightConstr))
   }
 
   /**
