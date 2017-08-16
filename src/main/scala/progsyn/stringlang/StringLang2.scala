@@ -214,7 +214,8 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
     val Spec(exampleSpec, constraint) = spec
     constraint match {
       /** should we send this constraint down further, or just false? */
-      case IsNum(_) => Spec(Nil, False)
+      case IsNumStart(_) => Spec(Nil, False)
+      case IsNumEnd(_) => Spec(Nil, False)
       case _ =>
         val exSpec = for ((inputstr, idxes) <- exampleSpec) yield {
           (inputstr, idxes.flatMap(idx => Set(idx, inputstr.length - idx)))
@@ -232,7 +233,7 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
     val inputsOnly = spec.exampleSpec.map(_._1)
 
     val regexPairs: Set[(Regex, Regex)] = constraint match {
-      case IsNumStart(_) => Set(("\\s+".r, "\\d".r))
+      case IsNumStart(_) => Set(("\\s|^|$".r, "\\b\\d+\\b".r))
       case IsNumEnd(_) => Set(("\\b\\d+\\b".r, "\\s|^|$".r))
       case _ =>
         val relevantRegexes = allowedRegexes.filter { regex =>
@@ -284,7 +285,7 @@ trait ConstraintSpecs { self: StringLang2 with Generators =>
     case False => false
     case And(l, r) => eval(l) && eval(r)
     case Or(l, r) => eval(l) && eval(r)
-    case IsNum(_) => !("\\d+".r).findFirstIn(str).isEmpty
+    case IsNum(_) => !("\\b\\d+\\b".r).findFirstIn(str).isEmpty
     case _ => ??? //<-- TODO: implement full behaviour?
   }
 }
