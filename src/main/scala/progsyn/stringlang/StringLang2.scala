@@ -231,41 +231,37 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
 
     val inputsOnly = spec.exampleSpec.map(_._1)
 
-    //constraint match {
-    //  case IsNumber(_) =>
-    //    val regexPairs = Set(
-    //      ()
-    //    )
-    //  case _ =>
-        // filter all regexes from the list which match at least once
-        // in all examples
+    val regexPairs: Set[(Regex, Regex)] = constraint match {
+      case IsNumStart(_) => Set(("\\s+".r, "\\d".r))
+      case IsNumEnd(_) => Set(("\\b\\d+\\b".r, "\\s|^|$".r))
+      case _ =>
         val relevantRegexes = allowedRegexes.filter { regex =>
           inputsOnly.forall { in => !regex.findFirstIn(in).isEmpty }
         }.toSet
 
-        val exSpec = for ((inputstr, idxes) <- spec.exampleSpec) yield {
-          val regexPairs = for {
-            r1 <- relevantRegexes
-            r2 <- relevantRegexes - r1
-          } yield (r1, r2)
+        for {
+           r1 <- relevantRegexes
+           r2 <- relevantRegexes - r1
+         } yield (r1, r2)
+    }
 
-          val triplesOfInterest = regexPairs.foldLeft(Set.empty[(Regex, Regex, Int)]) { case (acc, (lreg, rreg)) =>
-            val lregEndings = lreg.findAllMatchIn(inputstr).map(_.end)
-            val rregBeginnings = rreg.findAllMatchIn(inputstr).map(_.start).toSet
+    val exSpec = for ((inputstr, idxes) <- spec.exampleSpec) yield {
+      val triplesOfInterest = regexPairs.foldLeft(Set.empty[(Regex, Regex, Int)]) { case (acc, (lreg, rreg)) =>
+        val lregEndings = lreg.findAllMatchIn(inputstr).map(_.end)
+        val rregBeginnings = rreg.findAllMatchIn(inputstr).map(_.start).toSet
 
-            val relevantPoses = lregEndings.filter(pos => rregBeginnings.contains(pos))
+        val relevantPoses = lregEndings.filter(pos => rregBeginnings.contains(pos))
 
-            if (relevantPoses.isEmpty) acc
-            else {
-              val len = relevantPoses.length
-              val positions = (0 until len) ++ (-1 to -len by -1)
-              acc union (positions.map((lreg, rreg, _)).toSet)
-            }
-          }
-        (inputstr, triplesOfInterest)
+        if (relevantPoses.isEmpty) acc
+        else {
+          val len = relevantPoses.length
+          val positions = (0 until len) ++ (-1 to -len by -1)
+          acc union (positions.map((lreg, rreg, _)).toSet)
+        }
       }
-      Spec(exSpec, constraint)
-    //}
+      (inputstr, triplesOfInterest)
+    }
+    Spec(exSpec, constraint)
   }
 }
 
@@ -299,8 +295,8 @@ object PlayGround extends Specs with ConstraintSpecs {
     println("oh hai!!")
 
     val examples = List(
-      ("abc 124 def 247 ghi 77854", "def"),
-      ("124 asdfasdf 123a abc 232", "abc")
+      ("abc 124 def 247 ghi 77854", "247"),
+      ("124 asdfasdf 123a abc 232", "232")
     )
 
     val constraint = IsNum(StrSym)
