@@ -184,11 +184,13 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
      */
     val newLeftConstr = spec.constraint match {
       case IsNum(_) => IsNumStart(IntSym)
+      case IsWord(_) => IsWordStart(IntSym)
       case _ => spec.constraint //<-- should this constraint be carried over?
     }
 
     val newRightConstr = spec.constraint match {
       case IsNum(_) => IsNumEnd(IntSym)
+      case IsWord(_) => IsWordEnd(IntSym)
       case _ => spec.constraint //<-- should this constraint be carried over?
     }
 
@@ -216,6 +218,8 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
       /** should we send this constraint down further, or just false? */
       case IsNumStart(_) => Spec(Nil, False)
       case IsNumEnd(_) => Spec(Nil, False)
+      case IsWordStart(_) => Spec(Nil, False)
+      case IsWordEnd(_) =>  Spec(Nil, False)
       case _ =>
         val exSpec = for ((inputstr, idxes) <- exampleSpec) yield {
           (inputstr, idxes.flatMap(idx => Set(idx, inputstr.length - idx)))
@@ -235,6 +239,10 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
     val regexPairs: Set[(Regex, Regex)] = constraint match {
       case IsNumStart(_) => Set(("\\s|^|$".r, "\\b\\d+\\b".r))
       case IsNumEnd(_) => Set(("\\b\\d+\\b".r, "\\s|^|$".r))
+
+      case IsWordStart(_) => Set(("\\s|^|$".r, "\\b[a-zA-Z]+\\b".r))
+      case IsWordEnd(_) => Set(("\\b[a-zA-Z]+\\b".r, "\\s|^|$".r))
+
       case _ =>
         val relevantRegexes = allowedRegexes.filter { regex =>
           inputsOnly.forall { in => !regex.findFirstIn(in).isEmpty }
@@ -280,12 +288,17 @@ trait ConstraintSpecs { self: StringLang2 with Generators =>
   case class IsNumStart(i: IntSym.type) extends Bool
   case class IsNumEnd(i: IntSym.type) extends Bool
 
+  case class IsWord(s: StrSym.type) extends Bool
+  case class IsWordStart(i: IntSym.type) extends Bool
+  case class IsWordEnd(i: IntSym.type) extends Bool
+
   def eval(b: Bool)(implicit str: String): Boolean = b match {
     case True => true
     case False => false
     case And(l, r) => eval(l) && eval(r)
     case Or(l, r) => eval(l) && eval(r)
     case IsNum(_) => !("\\b\\d+\\b".r).findFirstIn(str).isEmpty
+    case IsWord(_) => !("\\b[a-zA-Z]+\\b".r).findFirstIn(str).isEmpty
     case _ => ??? //<-- TODO: implement full behaviour?
   }
 }
@@ -296,11 +309,11 @@ object PlayGround extends Specs with ConstraintSpecs {
     println("oh hai!!")
 
     val examples = List(
-      ("abc 124 def 247 ghi 77854", "247"),
-      ("124 asdfasdf 123a abc 232", "232")
+      ("abc324 124 def 247 ghi 77854", "ghi"),
+      ("1212 asdfasdf 123a abc 232", "abc")
     )
 
-    val constraint = IsNum(StrSym)
+    val constraint = IsWord(StrSym)
     println(solve(Spec(examples, constraint)).take(5).toList)
   }
 }
