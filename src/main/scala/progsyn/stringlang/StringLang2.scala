@@ -222,7 +222,7 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
       case IsWordEnd(_) =>  Spec(Nil, False)
       case _ =>
         val exSpec = for ((inputstr, idxes) <- exampleSpec) yield {
-          (inputstr, idxes.flatMap(idx => Set(idx, inputstr.length - idx)))
+          (inputstr, idxes.flatMap(idx => Set(idx, idx - inputstr.length - 1)))
         }
         Spec(exSpec, constraint)
     }
