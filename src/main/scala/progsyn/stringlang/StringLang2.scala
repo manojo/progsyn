@@ -185,13 +185,13 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
     val newLeftConstr = spec.constraint match {
       case IsNum(_) => IsNumStart(IntSym)
       case IsWord(_) => IsWordStart(IntSym)
-      case _ => spec.constraint //<-- should this constraint be carried over?
+      case _ => NoConstraint //<-- we propagate a no constraint
     }
 
     val newRightConstr = spec.constraint match {
       case IsNum(_) => IsNumEnd(IntSym)
       case IsWord(_) => IsWordEnd(IntSym)
-      case _ => spec.constraint //<-- should this constraint be carried over?
+      case _ => NoConstraint
     }
 
     val exSpecs: List[(String, Set[(Int, Int)])] = for ((input, output) <- spec.exampleSpec) yield {
@@ -243,7 +243,7 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
       case IsWordStart(_) => Set(("\\s|^|$".r, "\\b[a-zA-Z]+\\b".r))
       case IsWordEnd(_) => Set(("\\b[a-zA-Z]+\\b".r, "\\s|^|$".r))
 
-      case _ =>
+      case _ => // <-- should really be case NoConstraint
         val relevantRegexes = allowedRegexes.filter { regex =>
           inputsOnly.forall { in => !regex.findFirstIn(in).isEmpty }
         }.toSet
@@ -291,6 +291,8 @@ trait ConstraintSpecs { self: StringLang2 with Generators =>
   case class IsWord(s: StrSym.type) extends Bool
   case class IsWordStart(i: IntSym.type) extends Bool
   case class IsWordEnd(i: IntSym.type) extends Bool
+
+  case object NoConstraint extends Bool
 
   def eval(b: Bool)(implicit str: String): Boolean = b match {
     case True => true
