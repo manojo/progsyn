@@ -311,8 +311,8 @@ object PlayGround extends Specs with ConstraintLang {
     println("oh hai!!")
 
     val examples = List(
-      ("abc324 124 def 247 ghi 77854", "ghi"),
-      ("1212 asdfasdf 123a abc 232", "abc")
+      ("bc324a asdf 122d 321 asdf 32234 adsd", "asdf"),
+      ("123 jkljkl kll 4234q adf asdfasdf asdf", "kll")
     )
 
     val constraint = IsWord(StrSym)
