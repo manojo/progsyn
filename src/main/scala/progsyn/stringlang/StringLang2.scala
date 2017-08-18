@@ -7,7 +7,7 @@ import scala.util.matching.Regex
  * The goal is to make the `witness` functions more visible, rather
  * than baking them into the implementation of generators
  */
-trait StringLang2 { self: ConstraintSpecs =>
+trait StringLang2 { self: ConstraintLang =>
 
   /** symbols representing variables of certain types */
   case object StrSym
@@ -111,7 +111,7 @@ trait StringLang2 { self: ConstraintSpecs =>
  * shouldn't require a developer (they should rather be taken care of by the
  * framework)
  */
-trait Generators extends StringLang2 { self: ConstraintSpecs =>
+trait Generators extends StringLang2 { self: ConstraintLang =>
 
   /**
    * Based on the above specs we can create a generator for substrings
@@ -169,7 +169,7 @@ trait Generators extends StringLang2 { self: ConstraintSpecs =>
 /**
  * This trait implements the specifications declared above
  */
-trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
+trait Specs extends StringLang2 with Generators { self: ConstraintLang =>
 
   /**
    * Given a specification for Substring, can I get a specification for pos?
@@ -274,7 +274,7 @@ trait Specs extends StringLang2 with Generators { self: ConstraintSpecs =>
   }
 }
 
-trait ConstraintSpecs { self: StringLang2 with Generators =>
+trait ConstraintLang { self: StringLang2 with Generators =>
   abstract class Bool {
     def and(that: Bool): Bool = And(this, that)
     def or(that: Bool): Bool = Or(this, that)
@@ -305,7 +305,7 @@ trait ConstraintSpecs { self: StringLang2 with Generators =>
   }
 }
 
-object PlayGround extends Specs with ConstraintSpecs {
+object PlayGround extends Specs with ConstraintLang {
 
   def main(args: Array[String]) {
     println("oh hai!!")
