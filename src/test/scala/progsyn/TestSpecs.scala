@@ -5,6 +5,6 @@ import org.scalatest.FunSuite
 /**
  * Testing specifications
  */
-class SpecSuite extends FunSuite with Specs {
+class SpecSuite extends FunSuite {
   /** no tests for now! boo! */
 }
